@@ -145,7 +145,54 @@ const DXMT_FILES_WITH_UNIXLIB = [
 
 const CURRENT_DXMT_VERSION = "0.72.0";
 
+export async function* checkAndDownloadDXMTFromArtifactCache(aria2: Aria2, tagOrRunId: string): CommonUpdateProgram {
+  if (
+    eq(
+      tagOrRunId,
+      await getKeyOrDefault("installed_dxmt_version", "0.0.0")
+    )
+  ) {
+    return;
+  }
+  const isTag = tagOrRunId.startsWith("v");
+
+  await rmrf_dangerously(resolve(`./dxmt`));
+  await mkdirp("./dxmt");
+  yield ["setStateText", "DOWNLOADING_ENVIRONMENT"];
+  for (const file of DXMT_FILES_WITH_UNIXLIB) {
+    for await (const progress of aria2.doStreamingDownload({
+      uri: `https://dxmt.riverfog7.com/${isTag ? "artifacts" : "builds"}/download/${tagOrRunId}/artifact/${file}`,
+      absDst: resolve(`./dxmt/${file}`),
+    })) {
+      yield [
+        "setProgress",
+        Number((progress.completedLength * BigInt(100)) / progress.totalLength),
+      ];
+      yield [
+        "setStateText",
+        "DOWNLOADING_ENVIRONMENT_SPEED",
+        `${humanFileSize(Number(progress.downloadSpeed))}`,
+      ];
+    }
+  }
+
+  setKey("installed_dxmt_version", tagOrRunId);
+}
+
 export async function* checkAndDownloadDXMT(aria2: Aria2): CommonUpdateProgram {
+  // Check if user has selected a custom DXMT version
+  const selectedVersion = await getKeyOrDefault(
+    "dxmt_selected_version",
+    "default"
+  );
+
+  // If user selected a custom version, use the artifact cache instead
+  if (selectedVersion !== "default") {
+    yield* checkAndDownloadDXMTFromArtifactCache(aria2, selectedVersion);
+    return;
+  }
+
+  // Otherwise, use the default hardcoded version
   if (
     eq(
       CURRENT_DXMT_VERSION,
