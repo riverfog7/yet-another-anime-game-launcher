@@ -145,8 +145,14 @@ const DXMT_FILES_WITH_UNIXLIB = [
 
 const CURRENT_DXMT_VERSION = "0.72.0";
 
-export async function* checkAndDownloadDXMTFromArtifactCache(aria2: Aria2, tagOrRunId: string): CommonUpdateProgram {
-  const installedVersion = await getKeyOrDefault("installed_dxmt_version", "0.0.0");
+export async function* checkAndDownloadDXMTFromArtifactCache(
+  aria2: Aria2,
+  tagOrRunId: string
+): CommonUpdateProgram {
+  const installedVersion = await getKeyOrDefault(
+    "installed_dxmt_version",
+    "0.0.0"
+  );
 
   // Simple string comparison for exact match (works for both tags and run IDs)
   if (tagOrRunId === installedVersion) {
@@ -160,7 +166,9 @@ export async function* checkAndDownloadDXMTFromArtifactCache(aria2: Aria2, tagOr
   yield ["setStateText", "DOWNLOADING_ENVIRONMENT"];
   for (const file of DXMT_FILES_WITH_UNIXLIB) {
     for await (const progress of aria2.doStreamingDownload({
-      uri: `https://dxmt.riverfog7.com/${isTag ? "artifacts" : "builds"}/download/${tagOrRunId}/artifact/${file}`,
+      uri: `https://dxmt.riverfog7.com/${
+        isTag ? "artifacts" : "builds"
+      }/download/${tagOrRunId}/artifact/${file}`,
       absDst: resolve(`./dxmt/${file}`),
     })) {
       yield [
@@ -192,7 +200,10 @@ export async function* checkAndDownloadDXMT(aria2: Aria2): CommonUpdateProgram {
   }
 
   // Otherwise, use the default hardcoded version
-  const installedVersion = await getKeyOrDefault("installed_dxmt_version", "0.0.0");
+  const installedVersion = await getKeyOrDefault(
+    "installed_dxmt_version",
+    "0.0.0"
+  );
 
   // Simple string comparison - safe even if previously had a custom version installed
   if (CURRENT_DXMT_VERSION === installedVersion) {

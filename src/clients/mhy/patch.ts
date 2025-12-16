@@ -64,30 +64,50 @@ export async function* patchProgram(
 
   const system32Dir = join(wine.prefix, "drive_c", "windows", "system32");
   const syswow64Dir = join(wine.prefix, "drive_c", "windows", "syswow64");
+  if (wine.attributes.renderBackend == "dxmt") {
+    const isDefaultDXMT =
+      (await getKeyOrDefault("dxmt_selected_version", "default")) === "default";
 
-  for (const f of DXMT_FILES) {
-    await forceMove(join(system32Dir, f), join(system32Dir, f + ".bak"));
-    await cp(`./dxmt/${f}`, join(system32Dir, f));
-  }
+    if (isDefaultDXMT) {
+      // Native DXMT: install DLLs to system32
+      for (const f of DXMT_FILES) {
+        await forceMove(join(system32Dir, f), join(system32Dir, f + ".bak"));
+        await cp(`./dxmt/${f}`, join(system32Dir, f));
+      }
+    } else {
+      // Builtin DXMT: install DLLs to Wine's lib/wine/x86_64-windows
+      for (const f of DXMT_FILES) {
+        const wineLibPath = resolve(`./wine/lib/wine/x86_64-windows/${f}`);
+        await forceMove(wineLibPath, wineLibPath + ".bak");
+        await cp(`./dxmt/${f}`, wineLibPath);
+      }
+      // winemetal.dll also to system32 for builtin
+      await forceMove(
+        join(system32Dir, "winemetal.dll"),
+        join(system32Dir, "winemetal.dll.bak")
+      );
+      await cp(`./dxmt/winemetal.dll`, join(system32Dir, "winemetal.dll"));
+    }
 
-  await cp(
-    `./dxmt/winemetal.dll`,
-    resolve("./wine/lib/wine/x86_64-windows/winemetal.dll")
-  );
-
-  await cp(
-    `./dxmt/winemetal.so`,
-    resolve("./wine/lib/wine/x86_64-unix/winemetal.so")
-  );
-
-  if (server.id.startsWith("hkrpg")) {
+    // winemetal files always go to Wine lib directories
     await cp(
-      `./dxmt/nvngx.dll`,
-      resolve("./wine/lib/wine/x86_64-windows/nvngx.dll")
+      `./dxmt/winemetal.dll`,
+      resolve("./wine/lib/wine/x86_64-windows/winemetal.dll")
     );
-    await cp(`./dxmt/nvngx.dll`, join(system32Dir, "nvngx.dll"));
+    await cp(
+      `./dxmt/winemetal.so`,
+      resolve("./wine/lib/wine/x86_64-unix/winemetal.so")
+    );
+    if (server.id.startsWith("hkrpg")) {
+      await cp(
+        `./dxmt/nvngx.dll`,
+        resolve("./wine/lib/wine/x86_64-windows/nvngx.dll")
+      );
+      if (isDefaultDXMT) {
+        await cp(`./dxmt/nvngx.dll`, join(system32Dir, "nvngx.dll"));
+      }
+    }
   }
-
   if (config.reshade) {
     await cp(resolve("./reshade/dxgi.dll"), join(gameDir, "dxgi.dll"));
     await cp(
@@ -152,8 +172,24 @@ export async function* patchRevertProgram(
 
   const system32Dir = join(wine.prefix, "drive_c", "windows", "system32");
   if (wine.attributes.renderBackend == "dxmt") {
-    for (const f of DXMT_FILES) {
-      await forceMove(join(system32Dir, f + ".bak"), join(system32Dir, f));
+    const isDefaultDXMT =
+      (await getKeyOrDefault("dxmt_selected_version", "default")) === "default";
+
+    if (isDefaultDXMT) {
+      // Revert native DXMT from system32
+      for (const f of DXMT_FILES) {
+        await forceMove(join(system32Dir, f + ".bak"), join(system32Dir, f));
+      }
+    } else {
+      // Revert builtin DXMT from Wine's lib directories
+      for (const f of DXMT_FILES) {
+        const wineLibPath = resolve(`./wine/lib/wine/x86_64-windows/${f}`);
+        await forceMove(wineLibPath + ".bak", wineLibPath);
+      }
+      await forceMove(
+        join(system32Dir, "winemetal.dll.bak"),
+        join(system32Dir, "winemetal.dll")
+      );
     }
   }
   if (config.reshade) {

@@ -32,7 +32,9 @@ export class DXMTMirrorClient {
     const url = `${this.baseUrl}/builds/list?page=${page}&page_size=${pageSize}`;
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`Failed to fetch builds: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch builds: ${response.status} ${response.statusText}`
+      );
     }
     return response.json();
   }
@@ -86,4 +88,3 @@ export function transformBuildsToOptions(builds: DXMTBuild[]): {
 
   return { releases, ciBuilds };
 }
-

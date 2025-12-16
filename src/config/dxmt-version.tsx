@@ -38,7 +38,10 @@ export async function createDXMTVersionConfig({
   config: Partial<Config>;
 }) {
   // Load saved version
-  config.dxmtVersion = await getKeyOrDefault("dxmt_selected_version", "default");
+  config.dxmtVersion = await getKeyOrDefault(
+    "dxmt_selected_version",
+    "default"
+  );
 
   // Create signals
   const [value, setValue] = createSignal(config.dxmtVersion);
@@ -64,7 +67,9 @@ export async function createDXMTVersionConfig({
       const { releases: r, ciBuilds: ci } = transformBuildsToOptions(
         response.builds
       );
-      await log(`Transformed to ${r.length} releases and ${ci.length} CI builds`);
+      await log(
+        `Transformed to ${r.length} releases and ${ci.length} CI builds`
+      );
       setReleases(r);
       setCiBuilds(ci);
 
@@ -84,7 +89,9 @@ export async function createDXMTVersionConfig({
         setCiValue(savedVersion);
       } else {
         // Unknown version, default to "default"
-        await log(`Unknown saved DXMT version: ${savedVersion}, defaulting to default`);
+        await log(
+          `Unknown saved DXMT version: ${savedVersion}, defaulting to default`
+        );
         setReleaseValue("default");
         setCiValue("");
         setValue("default");
@@ -208,4 +215,3 @@ export async function createDXMTVersionConfig({
     },
   ] as const;
 }
-
