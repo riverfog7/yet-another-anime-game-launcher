@@ -146,14 +146,13 @@ const DXMT_FILES_WITH_UNIXLIB = [
 const CURRENT_DXMT_VERSION = "0.72.0";
 
 export async function* checkAndDownloadDXMTFromArtifactCache(aria2: Aria2, tagOrRunId: string): CommonUpdateProgram {
-  if (
-    eq(
-      tagOrRunId,
-      await getKeyOrDefault("installed_dxmt_version", "0.0.0")
-    )
-  ) {
+  const installedVersion = await getKeyOrDefault("installed_dxmt_version", "0.0.0");
+
+  // Simple string comparison for exact match (works for both tags and run IDs)
+  if (tagOrRunId === installedVersion) {
     return;
   }
+
   const isTag = tagOrRunId.startsWith("v");
 
   await rmrf_dangerously(resolve(`./dxmt`));
@@ -193,12 +192,10 @@ export async function* checkAndDownloadDXMT(aria2: Aria2): CommonUpdateProgram {
   }
 
   // Otherwise, use the default hardcoded version
-  if (
-    eq(
-      CURRENT_DXMT_VERSION,
-      await getKeyOrDefault("installed_dxmt_version", "0.0.0")
-    )
-  ) {
+  const installedVersion = await getKeyOrDefault("installed_dxmt_version", "0.0.0");
+
+  // Simple string comparison - safe even if previously had a custom version installed
+  if (CURRENT_DXMT_VERSION === installedVersion) {
     return;
   }
 

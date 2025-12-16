@@ -18,7 +18,7 @@ import {
   Text,
 } from "@hope-ui/solid";
 import { createEffect, createSignal, For, Show } from "solid-js";
-import { getKeyOrDefault, setKey } from "../utils";
+import { getKeyOrDefault, setKey, log } from "../utils";
 import { Config } from "./config-def";
 import {
   DXMTMirrorClient,
@@ -47,20 +47,9 @@ export async function createDXMTVersionConfig({
   const [loading, setLoading] = createSignal(true);
   const [error, setError] = createSignal<string | null>(null);
 
-  // Determine which tab and value to show
-  const isDefaultOrRelease = () => {
-    const v = value();
-    if (v === "default") return true;
-    return releases().some(r => r.id === v);
-  };
-
-  // Separate values for each tab
-  const [releaseValue, setReleaseValue] = createSignal(
-    isDefaultOrRelease() ? value() : "default"
-  );
-  const [ciValue, setCiValue] = createSignal(
-    !isDefaultOrRelease() ? value() : ""
-  );
+  // Separate values for each tab - initialize empty, will be set after fetch
+  const [releaseValue, setReleaseValue] = createSignal("default");
+  const [ciValue, setCiValue] = createSignal("");
 
   // Fetch builds from API
   const client = new DXMTMirrorClient();
@@ -69,14 +58,41 @@ export async function createDXMTVersionConfig({
     setLoading(true);
     setError(null);
     try {
+      await log("Starting DXMT builds fetch...");
       const response = await client.listBuilds(1, 100);
+      await log(`DXMT builds fetched: ${response.builds.length} builds`);
       const { releases: r, ciBuilds: ci } = transformBuildsToOptions(
         response.builds
       );
+      await log(`Transformed to ${r.length} releases and ${ci.length} CI builds`);
       setReleases(r);
       setCiBuilds(ci);
+
+      // After builds are loaded, set the correct initial values
+      const savedVersion = value();
+      log(`Saved DXMT version: ${savedVersion}`);
+      if (savedVersion === "default") {
+        setReleaseValue("default");
+        setCiValue("");
+      } else if (r.some(release => release.id === savedVersion)) {
+        // It's a release
+        setReleaseValue(savedVersion);
+        setCiValue("");
+      } else if (ci.some(build => build.id === savedVersion)) {
+        // It's a CI build
+        setReleaseValue("");
+        setCiValue(savedVersion);
+      } else {
+        // Unknown version, default to "default"
+        await log(`Unknown saved DXMT version: ${savedVersion}, defaulting to default`);
+        setReleaseValue("default");
+        setCiValue("");
+        setValue("default");
+      }
     } catch (e) {
-      setError(String(e));
+      const errorMsg = e instanceof Error ? e.message : String(e);
+      await log(`Failed to fetch DXMT builds: ${errorMsg}`);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -94,9 +110,16 @@ export async function createDXMTVersionConfig({
 
   // Handle CI selection
   function onCiChange(newValue: string) {
-    setCiValue(newValue);
-    setReleaseValue(""); // Clear release selection
-    setValue(newValue);
+    if (newValue === "") {
+      // User selected "Use Default" in CI tab
+      setCiValue("");
+      setReleaseValue("default");
+      setValue("default");
+    } else {
+      setCiValue(newValue);
+      setReleaseValue(""); // Clear release selection
+      setValue(newValue);
+    }
   }
 
   // Auto-save on change
@@ -177,7 +200,7 @@ export async function createDXMTVersionConfig({
           </Show>
           <Show when={error()}>
             <Text size="xs" color="$danger9">
-              Failed to load versions. Using default.
+              Failed to load versions: {error()}
             </Text>
           </Show>
         </FormControl>

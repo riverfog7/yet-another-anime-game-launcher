@@ -1,9 +1,9 @@
 // DXMT Mirror API Client and Data Models
 
 export interface DXMTBuild {
-  type: "builtin" | "release";
   artifact_count: number;
   created_at: string; // ISO 8601
+  has_wow64: boolean;
   // Release-only fields
   tag?: string;
   // CI build-only fields
@@ -32,7 +32,7 @@ export class DXMTMirrorClient {
     const url = `${this.baseUrl}/builds/list?page=${page}&page_size=${pageSize}`;
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`Failed to fetch builds: ${response.statusText}`);
+      throw new Error(`Failed to fetch builds: ${response.status} ${response.statusText}`);
     }
     return response.json();
   }
@@ -51,14 +51,15 @@ export function transformBuildsToOptions(builds: DXMTBuild[]): {
   const ciBuilds: DXMTVersionOption[] = [];
 
   builds.forEach(build => {
-    if (build.type === "release") {
+    // Determine if it's a release by presence of tag field
+    if (build.tag) {
       const date = formatDate(build.created_at);
       releases.push({
-        id: build.tag || "unknown",
+        id: build.tag,
         label: `${build.tag} - ${date}`,
         build,
       });
-    } else {
+    } else if (build.github_run_id) {
       // CI build
       const shortSha = build.commit_sha?.substring(0, 7) || "unknown";
       const date = formatDate(build.created_at);
