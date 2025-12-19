@@ -161,7 +161,7 @@ export async function createDXMTVersionConfig({
                     <SelectListbox>
                       <SelectOption value="default">
                         <SelectOptionText>
-                          Default (Stable v0.71.0)
+                          Default (Stable v0.72.0)
                         </SelectOptionText>
                         <SelectOptionIndicator />
                       </SelectOption>
