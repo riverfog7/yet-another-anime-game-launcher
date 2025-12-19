@@ -103,9 +103,7 @@ export async function* patchProgram(
         `./dxmt/nvngx.dll`,
         resolve("./wine/lib/wine/x86_64-windows/nvngx.dll")
       );
-      if (isDefaultDXMT) {
-        await cp(`./dxmt/nvngx.dll`, join(system32Dir, "nvngx.dll"));
-      }
+      await cp(`./dxmt/nvngx.dll`, join(system32Dir, "nvngx.dll"));
     }
   }
   if (config.reshade) {
