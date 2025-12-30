@@ -36,6 +36,7 @@ import { createSignal, JSXElement, Show } from "solid-js";
 import createReShade from "./reshade";
 import { createProxyEnabledConfig } from "@config/proxy-enabled";
 import { createProxyHostConfig } from "@config/proxy-host";
+import { createDXMTVersionConfig } from "@config/dxmt-version";
 
 export async function createConfiguration({
   wine,
@@ -59,6 +60,7 @@ export async function createConfiguration({
   const [MH] = await createMetalHUDConfig({ locale, config });
   const [R] = await createRetinaConfig({ locale, config });
   const [LC] = await createLeftCmdConfig({ locale, config });
+  const [DV] = await createDXMTVersionConfig({ config });
   const [GID] = await createGameInstallDirConfig({
     locale,
     config,
@@ -139,6 +141,7 @@ export async function createConfiguration({
                       <MH />
                       <R />
                       <LC />
+                      <DV />
                       <Divider />
                       <PRE />
                       <PRH />
