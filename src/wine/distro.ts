@@ -16,6 +16,16 @@ export interface WineDistribution {
 
 const YAAGL_BUILTIN_WINE: WineDistribution[] = [
   {
+    id: "11.0-dxmt-signed",
+    displayName: "Wine 11.0 Stable DXMT Signed",
+    remoteUrl:
+      "https://web.aws.riverfog7.com/files/wine-builds/wine-stable-11.0-osx64-signed.tar.xz",
+    attributes: {
+      renderBackend: "dxmt",
+      winePath: "Wine Stable.app/Contents/Resources/wine",
+    },
+  },
+  {
     id: "10.18-dxmt",
     displayName: "Wine 10.18 DXMT Experimental",
     remoteUrl:
